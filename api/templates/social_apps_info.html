@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Social Applications Information</title>
+</head>
+<body>
+    <h1>Social Applications Information</h1>
+    <ul>
+        {% for app in social_apps %}
+        <li>
+            Provider: {{ app.provider }}, Name: {{ app.name }}, Client ID: {{ app.client_id }}, Secret: {{ app.secret }}
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

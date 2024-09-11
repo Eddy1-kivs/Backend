@@ -1,0 +1,23 @@
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+.env
+.Pipfile
+.Pipfile.lock
+/media/
+.vscode/
+/migrations/
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
