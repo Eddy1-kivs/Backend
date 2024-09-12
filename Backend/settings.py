@@ -22,7 +22,7 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
 
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
-ALLOWED_HOSTS = ['127.0.0.1', 'https://avantiwriters.com/', '16.171.226.190']
+ALLOWED_HOSTS = ['127.0.0.1', 'https://avantiwriters.com/', '13.60.185.92']
 
 
 CORS_ALLOWED_ORIGINS = os.getenv('DJANGO_CORS_ALLOWED_ORIGINS', '').split(',')
