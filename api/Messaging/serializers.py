@@ -1,5 +1,5 @@
 from rest_framework import serializers 
-from api.models import Messaging, UploadFile
+from api.models import Messaging, UploadFile, CustomUser
 from django.utils import timezone
 
 
@@ -7,6 +7,12 @@ class UploadFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UploadFile
         fields = ['id', 'file', 'uploaded_at']
+        
+        
+class CustomUserSerializer(serializers.ModelSerializer):
+    class Meta: 
+        model = CustomUser
+        fields = ['id', 'username', 'profile_image']
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True)

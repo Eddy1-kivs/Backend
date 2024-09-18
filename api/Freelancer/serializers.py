@@ -137,19 +137,31 @@ class FreelancerProfileSerializer(serializers.ModelSerializer):
 
 class PortfolioSerializer(serializers.ModelSerializer):
     freelancer = serializers.StringRelatedField(source='freelancer.work_email', read_only=True)
+    
     class Meta:
         model = Portfolio
         fields = ['id', 'freelancer', 'title', 'description', 'image', 'document', 'link']
+        extra_kwargs = {
+            'image': {'required': False},   # Set image field as optional
+            'document': {'required': False} # Set document field as optional
+        }
+
+    def validate(self, attrs):
+        # Custom validation for files
+        if not attrs.get('image') and not attrs.get('document'):
+            raise serializers.ValidationError("Either an image or a document must be provided.")
+        return attrs
 
 class EducationLevelSerializer(serializers.ModelSerializer):
     class Meta:
         model = EducationlLevel
         fields = ['id', 'name']
-
-class EducationSerializer(serializers.ModelSerializer):
+        
+        
+class EducationFetchSerializer(serializers.ModelSerializer):
     freelancer = serializers.StringRelatedField(source='freelancer.work_email', read_only=True)
-    education_levels = EducationLevelSerializer(many=True) 
-  
+    education_levels = EducationLevelSerializer(many=True)  # Use the EducationLevelSerializer here
+
     class Meta:
         model = Education
         fields = ['id', 'freelancer', 'graduated_from', 'academic_major', 'certificate', 'education_levels']
@@ -157,11 +169,46 @@ class EducationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         education_level_data = validated_data.pop('education_levels', [])
 
+        # Create the education instance
         education = Education.objects.create(**validated_data)
         
+        # Set the many-to-many field
         education.education_levels.set(education_level_data)
 
+        # Save certificate if present
+        certificate = validated_data.get('certificate', None)
+        if certificate:
+            education.certificate = certificate
+            education.save()
+
         return education
+
+
+class EducationSerializer(serializers.ModelSerializer):
+    freelancer = serializers.StringRelatedField(source='freelancer.work_email', read_only=True)
+    education_levels = serializers.PrimaryKeyRelatedField(queryset=EducationlLevel.objects.all(), many=True)
+
+    class Meta:
+        model = Education
+        fields = ['id', 'freelancer', 'graduated_from', 'academic_major', 'certificate', 'education_levels']
+
+    def create(self, validated_data):
+        education_level_data = validated_data.pop('education_levels', [])
+
+        # Create the education instance
+        education = Education.objects.create(**validated_data)
+        
+        # Set the many-to-many field
+        education.education_levels.set(education_level_data)
+
+        # Save certificate if present
+        certificate = validated_data.get('certificate', None)
+        if certificate:
+            education.certificate = certificate
+            education.save()
+
+        return education
+
 
 
 
@@ -299,10 +346,16 @@ class ProposalSerializer(serializers.ModelSerializer):
     client_name = serializers.CharField(source='job.client.username', read_only=True)
     client_country = serializers.CharField(source='job.client.country', read_only=True)
     job_time_posted = serializers.CharField(source='job.time_posted', read_only=True)
+    job_paid = serializers.BooleanField(source='job.paid', read_only=True)  
 
     class Meta:
         model = Proposal
-        fields = ['id','job', 'job_title', 'job_description', 'job_skills', 'job_expertise', 'job_amount_posted', 'client_name', 'client_country', 'job_time_posted', 'submitted_at', 'cover_letter', 'bid_amount', 'files', 'viewed', 'viewed_at', 'accepted', 'declined']
+        fields = [
+            'id', 'job', 'job_title', 'job_description', 'job_skills', 'job_expertise', 
+            'job_amount_posted', 'client_name', 'client_country', 'job_time_posted', 
+            'job_paid', 'submitted_at', 'cover_letter', 'bid_amount', 'files', 
+            'viewed', 'viewed_at', 'accepted', 'declined'
+        ]
         read_only_fields = ['job']
 
     def create(self, validated_data):
@@ -324,7 +377,7 @@ class ProposalSerializer(serializers.ModelSerializer):
         return None
 
     
-    def format_time(self, time_obj):
+    def format_time(self, time_obj): 
         now = timezone.now()
         delta = now - time_obj
         if delta.days > 0:

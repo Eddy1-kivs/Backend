@@ -22,8 +22,14 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
 
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
-ALLOWED_HOSTS = ['*']
 
+#ALLOWED_HOSTS = ['13.60.62.214']
+#ALLOWED_HOSTS = ['13.60.62.214']
+ALLOWED_HOSTS = [
+    'www.avantiwriters.com',
+    'avantiwriters.com',
+    '13.60.62.214',  # Optionally include the IP if you still want to access via IP
+]
 
 CORS_ALLOWED_ORIGINS = os.getenv('DJANGO_CORS_ALLOWED_ORIGINS', '').split(',')
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
@@ -252,6 +258,7 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
@@ -266,9 +273,12 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+#EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+#DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+#EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_HOST_USER = 'avantiwriters@gmail.com'
+# DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+EMAIL_HOST_PASSWORD = 'bmna jetn yngw yabt'
 
 RESET_PASSWORD_URL = os.getenv('RESET_PASSWORD_URL')
 

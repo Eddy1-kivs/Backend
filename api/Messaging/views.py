@@ -2,13 +2,13 @@ from rest_framework.decorators import api_view, permission_classes, parser_class
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from api.models import Messaging, UploadFile, CustomUser
-from .serializers import MessageSerializer 
+from django.db.models import Q
+from api.models import Messaging, CustomUser
+from .serializers import MessageSerializer, CustomUserSerializer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from collections import defaultdict
 from django.db.models import Subquery, OuterRef
-from django.db.models import Q
 from django.db.models import Case, Count, When, F
 from django.contrib.auth import get_user_model
 
@@ -16,37 +16,31 @@ from django.contrib.auth import get_user_model
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
 def send_message(request):
-    receiver_id = request.data.get('receiver')
+    receiver_id = request.data.get('receiver') 
     sender = request.user
 
+    # Get the receiver user by ID
     try:
-        receiver = sender.__class__.objects.get(id=receiver_id)
-    except sender.__class__.DoesNotExist:
-        return Response({'error': f'{sender.__class__.__name__} does not exist'}, status=404)
+        receiver = CustomUser.objects.get(id=receiver_id)
+    except CustomUser.DoesNotExist:
+        return Response({'error': f'User with ID {receiver_id} does not exist'}, status=404)
 
+    # Validate the message data using the serializer
     serializer = MessageSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
+        # Save the message with the sender and receiver
         message = serializer.save(sender=sender, receiver=receiver)
 
-        # Handle file attachments
+        # Handle file attachments if provided
         files = request.FILES.getlist('files')
         for file_data in files:
             upload_file = UploadFile.objects.create(file=file_data)
             message.files.add(upload_file)
 
-        # Send message over WebSocket
-        channel_layer = get_channel_layer()
-        async_to_sync(channel_layer.group_send)(
-            f"chat_{sender.id}",
-            {
-                "type": "chat.message",
-                "message": serializer.data
-            }
-        )
-
         return Response(serializer.data, status=201)
+    
+    # Return errors if the serializer is invalid
     return Response(serializer.errors, status=400)
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_status(request, user_id):
@@ -59,17 +53,17 @@ def get_user_status(request, user_id):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
-def get_message_list(request): 
+def get_message_list(request):
     user = request.user
 
-    # Retrieve the latest message for each unique combination of sender and recipient
+    # Retrieve the latest message for each unique combination of sender and receiver
     latest_message_ids = Messaging.objects.filter(
         Q(sender=user) | Q(receiver=user)
     ).values('sender', 'receiver').annotate(
         last_msg=Subquery(
             Messaging.objects.filter(
-                Q(sender=OuterRef('sender'), receiver=user) |
-                Q(receiver=OuterRef('sender'), sender=user)
+                Q(sender=OuterRef('sender'), receiver=OuterRef('receiver')) |
+                Q(sender=OuterRef('receiver'), receiver=OuterRef('sender'))
             ).order_by('-id')[:1].values('id')
         )
     ).values_list('last_msg', flat=True)
@@ -77,23 +71,23 @@ def get_message_list(request):
     # Retrieve the full message objects based on the latest message IDs
     latest_messages = Messaging.objects.filter(id__in=latest_message_ids).order_by('-timestamp')
 
-    # Count the unread messages for each conversation
-    latest_messages = latest_messages.annotate(
-        unread_count=Count(
-            Case(
-                When(sender=user, is_read=False, receiver=F('receiver'), then=1),
-                When(receiver=user, is_read=False, sender=F('sender'), then=1),
-            )
-        )
-    )
-
     # Serialize the messages
     serializer = MessageSerializer(latest_messages, many=True, context={'request': request})
     response_data = serializer.data
-    
-    # Include partner id in each message
+
+    # Calculate unread message count manually
     for data in response_data:
+        if data['sender'] == user.id:
+            unread_count = Messaging.objects.filter(sender=data['receiver'], receiver=user, is_read=False).count()
+        else:
+            unread_count = Messaging.objects.filter(sender=user, receiver=data['sender'], is_read=False).count()
+
+        data['unread_count'] = unread_count
+
+        # Include partner information (the other user in the conversation)
         data['partner_id'] = data['receiver'] if data['sender'] == user.id else data['sender']
+        data['partner_username'] = data['receiver_username'] if data['sender'] == user.id else data['sender_username']
+        data['partner_profile_image'] = data['receiver_profile_image'] if data['sender'] == user.id else data['sender_profile_image']
 
     return Response(response_data)
 
@@ -143,5 +137,43 @@ def check_staff_status(request):
             'id': staff.id,
             'is_online': staff.is_online,
         })
-
+ 
     return Response(staff_statuses, status=200)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def search_messages_or_users(request): 
+    user = request.user
+    search_query = request.query_params.get('q', '')
+
+    if not search_query:
+        return Response({"error": "No search query provided"}, status=400)
+
+    # Search for messages containing the query (only conversations with the user)
+    messages = Messaging.objects.filter(
+        Q(sender=user) | Q(receiver=user),
+        Q(message__icontains=search_query)  # Search in message content
+    ).distinct()
+
+    # Serialize messages
+    message_serializer = MessageSerializer(messages, many=True, context={'request': request})
+
+    # Search for users by username (only users the user has chatted with)
+    users = CustomUser.objects.filter(
+        Q(id__in=Messaging.objects.filter(
+            Q(sender=user) | Q(receiver=user)
+        ).values('sender').distinct()) |
+        Q(id__in=Messaging.objects.filter(
+            Q(sender=user) | Q(receiver=user)
+        ).values('receiver').distinct()),
+        Q(username__icontains=search_query)  # Search in username
+    ).distinct()
+
+    # Serialize users
+    user_serializer = CustomUserSerializer(users, many=True)
+
+    return Response({
+        'messages': message_serializer.data,
+        'users': user_serializer.data
+    }, status=200)

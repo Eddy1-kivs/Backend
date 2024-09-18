@@ -99,7 +99,7 @@ from .Freelancer.views import (
 )
 
 from .Messaging.views import (
-    send_message, get_message_list, get_messages_with_user, get_unread_messages_count, get_user_status, check_staff_status
+    send_message, get_message_list, get_messages_with_user, get_unread_messages_count, get_user_status, check_staff_status, search_messages_or_users
 )
 from .Reviews.views import (post_review, user_reviews, other_user_reviews)
 
@@ -118,6 +118,7 @@ urlpatterns = [
     path('api/create-paypal/', create_paypal, name='create_paypal'),
     path('api/create-mpesa/', create_mpesa, name='create_mpesa'),
     path('api/get-cards/', get_cards, name='get_cards'),
+    path('search-messages-users/', search_messages_or_users, name='search_messages_users'),
     path('api/get-paypals/', get_paypals, name='get_paypals'),
     path('api/get-mpesas/', get_mpesas, name='get_mpesas'),
     path('api/delete-card/<int:id>/', delete_card, name='delete_card'),

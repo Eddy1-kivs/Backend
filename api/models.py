@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
 from django.core.validators import FileExtensionValidator
 import random  
-from dirtyfields import DirtyFieldsMixin
+from dirtyfields import DirtyFieldsMixin 
 from django.utils.crypto import get_random_string
 
 class Skill(models.Model):
