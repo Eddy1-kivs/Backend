@@ -256,15 +256,14 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
-
-# Static files (CSS, JavaScript, Images)
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Correct staticfiles directory
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -284,7 +283,12 @@ RESET_PASSWORD_URL = os.getenv('RESET_PASSWORD_URL')
 
 # Ensure ALLOWED_HOSTS is set correctly
 if not DEBUG:
-    ALLOWED_HOSTS = []  # Replace with your actual domain
+    ALLOWED_HOSTS = [
+     'www.avantiwriters.com',
+     'avantiwriters.com',
+     '13.60.62.214',  # Optionally include the IP if you still want to access via IP
+    ]
+    #ALLOWED_HOSTS = []  # Replace with your actual domain
 
 # Security settings for production
 if not DEBUG:

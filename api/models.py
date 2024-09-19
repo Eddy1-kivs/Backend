@@ -144,7 +144,7 @@ class Freelancer(CustomUser):
         upload_to='identification/national_id/front/',
         validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])],
         blank=True, null=True
-    ) 
+    )
     national_id_back = models.ImageField(
         upload_to='identification/national_id/back/',
         validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])],
@@ -160,8 +160,6 @@ class Freelancer(CustomUser):
         validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])],
         blank=True, null=True
     )
-
-    # Selfie image
     selfie_image = models.ImageField(
         upload_to='selfies/',
         validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png'])],
@@ -187,6 +185,53 @@ class Freelancer(CustomUser):
     class Meta:
         verbose_name = 'Freelancer'
         verbose_name_plural = 'Freelancers'
+    
+    def save(self, *args, **kwargs):
+        # Compress each image if it's present
+        if self.national_id_front:
+            self.national_id_front = self.compress_image(self.national_id_front)
+
+        if self.national_id_back:
+            self.national_id_back = self.compress_image(self.national_id_back)
+
+        if self.driving_license_front:
+            self.driving_license_front = self.compress_image(self.driving_license_front)
+
+        if self.passport_front:
+            self.passport_front = self.compress_image(self.passport_front)
+
+        if self.selfie_image:
+            self.selfie_image = self.compress_image(self.selfie_image)
+
+        super(Freelancer, self).save(*args, **kwargs)
+
+    def compress_image(self, image):
+        # Open the uploaded image
+        img = Image.open(image)
+
+        # Convert to RGB if it's PNG or has an alpha channel
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+
+        # Resize the image to a max width of 1024px (maintain aspect ratio)
+        img.thumbnail((1024, 1024))
+
+        # Save the image to a BytesIO object
+        img_io = io.BytesIO()
+        img.save(img_io, format='JPEG', quality=60)  # Set compression quality to 60
+        img_io.seek(0)
+
+        # Create a new InMemoryUploadedFile for the compressed image
+        compressed_image = InMemoryUploadedFile(
+            img_io,
+            'ImageField',
+            image.name,
+            'image/jpeg',
+            sys.getsizeof(img_io),
+            None
+        )
+
+        return compressed_image
 
 class Client(CustomUser):
 
