@@ -55,7 +55,8 @@ from .Client.views import (
     invite_freelancer,
     get_invited_jobs,
     verify_payment_and_post_job,
-    verify_card_payment_and_post_job
+    verify_card_payment_and_post_job,
+    upload_profile_image
 )
 from .Freelancer.views import (
     after_register,
@@ -107,6 +108,7 @@ from .Payment.views import (create_card, create_paypal, create_mpesa, get_cards,
 
 urlpatterns = [ 
     path('check-email/', check_email, name='check_email'),
+    path('upload-profile-image/', upload_profile_image, name='upload_profile_image'),
     path('auth/linkedin/callback', linkedin_callback, name='linkedin_callback'),
     path('verify-payment-and-post-job/', verify_payment_and_post_job, name='verify_payment_and_post_job'),
     path('create-user/', create_user, name='create_user'), 
