@@ -528,6 +528,47 @@ def proposal_detail(request, proposal_id):
     proposal_serializer = ProposalSerializer(proposal)
     return Response(proposal_serializer.data, status=status.HTTP_200_OK)
 
+import boto3
+from botocore.exceptions import NoCredentialsError
+from django.conf import settings
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+
+# Function to upload file to S3
+def upload_to_s3(file, filename):
+    s3 = boto3.client(
+        's3',
+        aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
+        region_name=settings.AWS_S3_REGION_NAME
+    )
+
+    try:
+        s3.upload_fileobj(file, settings.AWS_STORAGE_BUCKET_NAME, filename)
+        file_url = f"https://{settings.AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{filename}"
+        return file_url
+    except NoCredentialsError:
+        return None
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_profile_image(request):
+    if 'file' not in request.FILES:
+        return Response({"error": "No file uploaded"}, status=status.HTTP_400_BAD_REQUEST)
+
+    file = request.FILES['file']
+    filename = f"profile_images/{request.user.id}/{file.name}"
+
+    file_url = upload_to_s3(file, filename)
+    
+    if file_url:
+        return Response({"image_url": file_url}, status=status.HTTP_200_OK)
+    else:
+        return Response({"error": "Failed to upload image to S3"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated])
 def update_client_profile_image(request):
@@ -536,10 +577,11 @@ def update_client_profile_image(request):
     except Client.DoesNotExist:
         return Response({'error': 'Client not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Assuming you have a field named 'profile_image' in your client model
-    client.profile_image = request.data.get('profile_image', None)
+    profile_image_url = request.data.get('profile_image')
+    if not profile_image_url:
+        return Response({'error': 'No image URL provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
-    # Save the changes
+    client.profile_image = profile_image_url
     client.save()
 
     serializer = ProfileUpdateClientSerializer(client)

@@ -63,11 +63,13 @@ def update_profile_image(request):
     except Freelancer.DoesNotExist:
         return Response({'error': 'Freelancer not found.'}, status=status.HTTP_404_NOT_FOUND)
 
-    # Assuming you have a field named 'profile_image' in your Freelancer model
-    freelancer.profile_image = request.data.get('profile_image', None)
-
-    # Save the changes
+    profile_image_url = request.data.get('profile_image')
+    if not profile_image_url:
+        return Response({'error': 'No image URL provided.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    freelancer.profile_image = profile_image_url
     freelancer.save()
+
 
     serializer = FreelancerProfileSerializer(freelancer)
     return Response(serializer.data, status=status.HTTP_200_OK)

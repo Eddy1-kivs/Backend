@@ -43,9 +43,9 @@ class MessageSerializer(serializers.ModelSerializer):
         user = self.context.get('request', None).user
         if user:
             if obj.sender == user:
-                return obj.receiver.profile_image.url
+                return obj.receiver.profile_image
             else:
-                return obj.sender.profile_image.url
+                return obj.sender.profile_image
         return None
 
     def get_unread_count(self, obj):
