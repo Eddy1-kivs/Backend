@@ -18,14 +18,19 @@ INTASEND_SECRET_KEY = os.getenv('INTASEND_SECRET_KEY')
 INTASEND_PUBLIC_KEY = os.getenv('INTASEND_PUBLIC_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
+DEBUG = False  # Ensure debug is off in production
 
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
 ALLOWED_HOSTS = ['avantiwriters.com', 'www.avantiwriters.com']
 
 
-CORS_ALLOWED_ORIGINS = os.getenv('DJANGO_CORS_ALLOWED_ORIGINS', '').split(',')
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # For local development
+    "https://www.avantiwriters.com",
+    "https://avantiwriters.com",
+]
+
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
 CORS_ALLOW_HEADERS = [ 
     "accept",
