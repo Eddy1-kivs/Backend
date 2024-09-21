@@ -22,14 +22,7 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
 
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
-
-#ALLOWED_HOSTS = ['13.60.62.214']
-#ALLOWED_HOSTS = ['13.60.62.214']
-ALLOWED_HOSTS = [
-    'www.avantiwriters.com',
-    'avantiwriters.com',
-    '13.60.62.214',  # Optionally include the IP if you still want to access via IP
-]
+ALLOWED_HOSTS = []
 
 CORS_ALLOWED_ORIGINS = os.getenv('DJANGO_CORS_ALLOWED_ORIGINS', '').split(',')
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
@@ -71,6 +64,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     # 'allauth.socialaccount.providers.linkedin',
     'allauth.socialaccount.providers.microsoft',
+    'storages',
     
 ] 
 
@@ -205,14 +199,14 @@ TEMPLATES = [
 WSGI_APPLICATION = 'Backend.wsgi.application'
 ASGI_APPLICATION = 'Backend.asgi.application'
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
-        },
-    },
-}
+# CHANNEL_LAYERS = {
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [("127.0.0.1", 6379)],
+#         },
+#     },
+# }
 
 
 # Database
@@ -233,6 +227,17 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': os.getenv('DB_NAME'),  # Your RDS database name
+#         'USER': os.getenv('DB_USER'),  # Your RDS database username
+#         'PASSWORD': os.getenv('DB_PASSWORD'),  # Your RDS database password
+#         'HOST': os.getenv('DB_HOST'),  # The RDS endpoint (host) without the port
+#         'PORT': os.getenv('DB_PORT', '3306'),  # RDS MySQL default port is 3306
+#     }
+# }
+
 AUTH_USER_MODEL = 'api.CustomUser'
 
 # Password validation
@@ -256,13 +261,33 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
-# Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'  # Correct staticfiles directory
 
-# Media files (uploads)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles', 'static')
+# MEDIA_URLS ='/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    } 
+
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')
+AWS_S3_SIGNATURE_VERSION = os.getenv('AWS_S3_SIGNATURE_NAME', 's3v4')
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+AWS_DEFAULT_ACL = None
+AWS_S3_FILE_OVERWRITE = False
+
+
+
 
 
 # Default primary key field type
@@ -272,9 +297,6 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-#EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-#DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
-#EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_HOST_USER = 'avantiwriters@gmail.com'
 # DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 EMAIL_HOST_PASSWORD = 'bmna jetn yngw yabt'
@@ -283,15 +305,41 @@ RESET_PASSWORD_URL = os.getenv('RESET_PASSWORD_URL')
 
 # Ensure ALLOWED_HOSTS is set correctly
 if not DEBUG:
-    ALLOWED_HOSTS = [
-     'www.avantiwriters.com',
-     'avantiwriters.com',
-     '13.60.62.214',  # Optionally include the IP if you still want to access via IP
-    ]
-    #ALLOWED_HOSTS = []  # Replace with your actual domain
+    ALLOWED_HOSTS = []  # Replace with your actual domain
 
 # Security settings for production
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    
+import firebase_admin
+from firebase_admin import credentials
+# Load Firebase Admin credentials from environment variables
+FIREBASE_PRIVATE_KEY_ID = os.getenv("FIREBASE_PRIVATE_KEY_ID")
+FIREBASE_PRIVATE_KEY = os.getenv("FIREBASE_PRIVATE_KEY").replace("\\n", "\n")
+FIREBASE_CLIENT_EMAIL = os.getenv("FIREBASE_CLIENT_EMAIL")
+FIREBASE_CLIENT_ID = os.getenv("FIREBASE_CLIENT_ID")
+FIREBASE_CLIENT_CERT_URL = os.getenv("FIREBASE_CLIENT_CERT_URL")
+FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID")
+
+# Firebase Admin SDK Initialization
+FIREBASE_ADMIN_CREDENTIALS = {
+    "type": "service_account",
+    "project_id": FIREBASE_PROJECT_ID,
+    "private_key_id": FIREBASE_PRIVATE_KEY_ID,
+    "private_key": FIREBASE_PRIVATE_KEY,
+    "client_email": FIREBASE_CLIENT_EMAIL,
+    "client_id": FIREBASE_CLIENT_ID,
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": FIREBASE_CLIENT_CERT_URL
+}
+
+# Initialize Firebase Admin SDK if not already initialized
+if not firebase_admin._apps:
+    cred = credentials.Certificate(FIREBASE_ADMIN_CREDENTIALS)
+    firebase_admin.initialize_app(cred)
+    # print(f"Firebase Admin initialized with project ID: {FIREBASE_PROJECT_ID}")
+

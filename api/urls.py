@@ -1,10 +1,7 @@
 from django.urls import path, include
 from .Auth.views import (
-    create_client,
-    create_freelancer,
     client_info,
     freelancer_info,
-    change_email,
     logout_view,
     login,
     verify_otp,
@@ -19,13 +16,13 @@ from .Auth.views import (
     get_educations,
     generate_test_topic,
     submit_test,
-    google_login,
-    google_complete,
-    signup_with_social,
     change_password_view,
     request_password_reset,
     reset_password,
-    get_line_spacing
+    get_line_spacing,
+    create_user,
+    check_email,
+    linkedin_callback
 )
 from .Client.views import (
     update_client_profile,
@@ -106,13 +103,13 @@ from .Reviews.views import (post_review, user_reviews, other_user_reviews)
 from .Support.views import (clients, freelancers, suspended_users, verify_credentials, suspend_user, decline_credentials, hired_freelancers, freelancers_search, clients_search, hired_freelancers_search)
 
 from .Notifications.views import (NotificationViewSet, MarkNotificationAsRead, MarkAllNotificationsAsRead)
-from .views import (signup_success_view, home, show_social_applications)
 from .Payment.views import (create_card, create_paypal, create_mpesa, get_cards, get_paypals, get_mpesas, delete_card, delete_paypal, delete_mpesa, get_wallet_balance)
 
-urlpatterns = [
-    path('', show_social_applications, name='show_social_apps'),
-    path('signup-success/', signup_success_view, name='signup-success'),
+urlpatterns = [ 
+    path('check-email/', check_email, name='check_email'),
+    path('auth/linkedin/callback', linkedin_callback, name='linkedin_callback'),
     path('verify-payment-and-post-job/', verify_payment_and_post_job, name='verify_payment_and_post_job'),
+    path('create-user/', create_user, name='create_user'), 
     path('card-post-job/', verify_card_payment_and_post_job, name='verify_card_payment_and'),
     path('api/create-card/', create_card, name='create_card'),
     path('api/create-paypal/', create_paypal, name='create_paypal'),
@@ -148,11 +145,6 @@ urlpatterns = [
     path('change-user-password/', change_password_view, name='change_user_password'),
     path('api/request-password-reset/', request_password_reset, name='request_password_reset'),
     path('api/reset-password/<uidb64>/<token>/', reset_password, name='reset_password'),
-    path('google-login/', google_login, name='google-login'),
-    path('auth/complete/google/', google_complete, name='google-complete'),
-    path('auth/signup-with-social/', signup_with_social, name='signup-with-social'),
-    path('register/client/', create_client, name='client-register'),
-    path('register/freelancer/', create_freelancer, name='freelancer-register'),
     path('register/support/', create_support, name='support-register'),
     path('user/login/', login, name='support-dashboard-login'),
     path('all-clients/', clients, name='all-clients'),
@@ -190,7 +182,6 @@ urlpatterns = [
     path('after_register/', after_register, name='after_register'),
     path('update_verification_credentials/', update_verification_credentials, name='update_verification_credentials'),
     path('freelancer-profile/', get_freelancer_profile, name='freelancer-profile'),
-    path('change-email/', change_email, name='change_email'),
     path('update-profile-image/', update_profile_image, name='update_profile_image'),
     path('profile-update/', update_skills, name='update_skills'),
     path('logout/', logout_view, name='logout'), 

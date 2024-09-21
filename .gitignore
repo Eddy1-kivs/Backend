@@ -13,6 +13,7 @@
 .Pipfile
 .Pipfile.lock
 /media/
+/staticfiles/
 .vscode/
 /migrations/
 venv/

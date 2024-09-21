@@ -133,15 +133,27 @@ class SupportSerializer(serializers.ModelSerializer):
             validated_data['username'] = CustomUser().generate_unique_username()
         validated_data['password'] = make_password(validated_data['password'])
         return super().create(validated_data)
-        
+         
 class ClientSerializer(UserSerializer):
     class Meta:
         model = Client
-        fields = ['id', 'first_name', 'last_name', 'work_email', 'country',
-                  'receive_news_option', 'username','client_status', 'password', 'otp']
+        fields = [
+            'id', 'first_name', 'last_name', 'work_email', 'country',
+            'receive_news_option', 'username', 'client_status', 'password', 
+            'otp', 'profile_image', 'provider', 'provider_uid'
+        ]
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'provider': {'read_only': True},  # This will only be set in case of OAuth
+            'provider_uid': {'read_only': True},  # This too will be set for OAuth
+        }
 
     def create(self, validated_data):
-        validated_data['password'] = make_password(validated_data['password'])
+        # Check if the account is being created via OAuth provider
+        if 'provider' not in validated_data:
+            # Hash the password for regular sign-ups (non-OAuth)
+            validated_data['password'] = make_password(validated_data['password'])
+        
         return super().create(validated_data)
 
 

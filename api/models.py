@@ -10,6 +10,10 @@ from django.core.validators import FileExtensionValidator
 import random  
 from dirtyfields import DirtyFieldsMixin 
 from django.utils.crypto import get_random_string
+from PIL import Image
+import io
+from django.core.files.uploadedfile import InMemoryUploadedFile
+import sys
 
 class Skill(models.Model):
     name = models.CharField(max_length=255)
@@ -75,12 +79,19 @@ class Expertise(models.Model):
 
 class CustomUser(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    provider_state = models.BooleanField(default=False)
+    provider = models.CharField(max_length=50, default="local")  # Store provider name (google, facebook, etc.)
+    provider_uid = models.CharField(max_length=255, null=True, blank=True)
     work_email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)  # Add created_at field
     updated_at = models.DateTimeField(auto_now=True)  # Add updated_at field
     # password = models.CharField(max_length=128)
-    profile_image = models.ImageField(
-        upload_to='profile_images/', default='profile_images/default.svg.png',  blank=True, null=True)
+    profile_image = models.URLField(
+        max_length=255, 
+        default='https://freesvg.org/img/abstract-user-flat-4.png',  # Update this to a valid URL
+        blank=True,
+        null=True
+    )
     otp_code = models.CharField( 
         max_length=6, null=True, blank=True)
     county = models.CharField(max_length=255, blank=True, null=True)
@@ -241,7 +252,7 @@ class Client(CustomUser):
     class Meta:
         verbose_name = 'Client'
         verbose_name_plural = 'Clients'
-
+ 
 
 class Test(models.Model):
     freelancer = models.ForeignKey(Freelancer, on_delete=models.CASCADE)
