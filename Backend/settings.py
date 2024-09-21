@@ -22,7 +22,8 @@ DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
 
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['avantiwriters.com', 'www.avantiwriters.com']
+
 
 CORS_ALLOWED_ORIGINS = os.getenv('DJANGO_CORS_ALLOWED_ORIGINS', '').split(',')
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
@@ -305,7 +306,8 @@ RESET_PASSWORD_URL = os.getenv('RESET_PASSWORD_URL')
 
 # Ensure ALLOWED_HOSTS is set correctly
 if not DEBUG:
-    ALLOWED_HOSTS = []  # Replace with your actual domain
+    ALLOWED_HOSTS = ['avantiwriters.com', 'www.avantiwriters.com']
+ # Replace with your actual domain
 
 # Security settings for production
 if not DEBUG:
