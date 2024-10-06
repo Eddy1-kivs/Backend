@@ -8,7 +8,7 @@ from .serializers import (ClientSerializer, LanguageSerializer,
                            ClientProfileSerializer, StyleSerializer,
                            FreelancerProfileSerializer, AssignmentTypeSerializer,
                            LogoutSerializer, ServiceTypeSerializer,
-                             UserStatusSerializer, SupportSerializer, LevelSerializer,
+                             UserStatusSerializer, SupportSerializer, LevelSerializer,UserInfoSerializer,
                                EducationLevelSerializer, TestSerializer, ChangePasswordSerializer, ResetPasswordSerializer, LineSpacingSerializer)
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
@@ -715,8 +715,15 @@ def get_styles(request):
 def user(request):
     user = CustomUser.objects.get(id=request.user.id)
     serializer = UserStatusSerializer(user)
-    return Response(serializer.data)
+    return Response(serializer.data) 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_info(request):
+    user = CustomUser.objects.get(id=request.user.id)
+    serializer =UserInfoSerializer(user)
+    return Response(serializer.data)
+    
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def client_info(request):

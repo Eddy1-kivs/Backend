@@ -504,7 +504,7 @@ class RevisionReason(models.Model):
     def __str__(self):
         return f"Revision Reason for {self.job.title}"
     
-class Messaging(models.Model):
+class Messaging(models.Model): 
     user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name="user")
     sender = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name="sender")
     receiver = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name="receiver")

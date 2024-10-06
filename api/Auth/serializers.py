@@ -121,7 +121,21 @@ class UserSerializer(serializers.ModelSerializer):
 class UserStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = '__all__'
+        fields = [
+            'is_active', 
+            'is_online', 
+            'is_staff', 
+            'is_superuser', 
+            'freelancer_status', 
+            'client_status', 
+            'suspend', 
+            'verified'
+        ]
+        
+class UserInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields ='__all__'
 
 class SupportSerializer(serializers.ModelSerializer):
     class Meta:

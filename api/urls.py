@@ -22,7 +22,8 @@ from .Auth.views import (
     get_line_spacing,
     create_user,
     check_email,
-    linkedin_callback
+    linkedin_callback,
+    user_info
 )
 from .Client.views import (
     update_client_profile,
@@ -106,7 +107,7 @@ from .Support.views import (clients, freelancers, suspended_users, verify_creden
 from .Notifications.views import (NotificationViewSet, MarkNotificationAsRead, MarkAllNotificationsAsRead)
 from .Payment.views import (create_card, create_paypal, create_mpesa, get_cards, get_paypals, get_mpesas, delete_card, delete_paypal, delete_mpesa, get_wallet_balance)
 
-urlpatterns = [ 
+urlpatterns = [  
     path('check-email/', check_email, name='check_email'),
     path('upload-profile-image/', upload_profile_image, name='upload_profile_image'),
     path('auth/linkedin/callback', linkedin_callback, name='linkedin_callback'),
@@ -165,6 +166,7 @@ urlpatterns = [
     path('freelancer-info/', freelancer_info, name='freelancer-info'),
     path('otp-verify/', verify_otp, name='otp-verify'), 
     path('user/', user, name='user'),
+    path('user-info/', user_info, name='user-info'),
     path('change-password/', change_password, name='change-password'),
     path('update-client-profile/', update_client_profile, name='update-client-profile'),
     path('update-client-profile-image/', update_client_profile_image, name='update-client-profile-imaage'),

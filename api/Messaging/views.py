@@ -3,7 +3,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.db.models import Q
-from api.models import Messaging, CustomUser
+from api.models import Messaging, CustomUser, UploadFile
 from .serializers import MessageSerializer, CustomUserSerializer
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
