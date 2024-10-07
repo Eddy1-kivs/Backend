@@ -129,7 +129,16 @@ class UserStatusSerializer(serializers.ModelSerializer):
             'freelancer_status', 
             'client_status', 
             'suspend', 
+            
             'verified'
+        ]
+
+class TypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Freelancer
+        fields = [
+            'is_writer',
+            'is_technical'
         ]
         
 class UserInfoSerializer(serializers.ModelSerializer):
@@ -178,7 +187,19 @@ class FreelancerSerializer(UserSerializer):
                   'work_email', 'receive_news_option','freelancer_status', 'username', 'password', 'otp']
 
     def create(self, validated_data):
+        # Ensure password is hashed
         validated_data['password'] = make_password(validated_data['password'])
+        
+        # Handle is_writer and is_technical based on type from the request data
+        freelancer_type = self.context['request'].data.get('type')
+        
+        if freelancer_type == 'writer':
+            validated_data['is_writer'] = True
+            validated_data['is_technical'] = False
+        elif freelancer_type == 'technical':
+            validated_data['is_writer'] = False
+            validated_data['is_technical'] = True
+
         return super().create(validated_data)
  
 

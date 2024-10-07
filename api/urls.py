@@ -23,7 +23,8 @@ from .Auth.views import (
     create_user,
     check_email,
     linkedin_callback,
-    user_info
+    user_info,
+    type
 )
 from .Client.views import (
     update_client_profile,
@@ -109,6 +110,7 @@ from .Payment.views import (create_card, create_paypal, create_mpesa, get_cards,
 
 urlpatterns = [  
     path('check-email/', check_email, name='check_email'),
+    path('type/', type, name='type'),
     path('upload-profile-image/', upload_profile_image, name='upload_profile_image'),
     path('auth/linkedin/callback', linkedin_callback, name='linkedin_callback'),
     path('verify-payment-and-post-job/', verify_payment_and_post_job, name='verify_payment_and_post_job'),

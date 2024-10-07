@@ -9,7 +9,8 @@ from .serializers import (ClientSerializer, LanguageSerializer,
                            FreelancerProfileSerializer, AssignmentTypeSerializer,
                            LogoutSerializer, ServiceTypeSerializer,
                              UserStatusSerializer, SupportSerializer, LevelSerializer,UserInfoSerializer,
-                               EducationLevelSerializer, TestSerializer, ChangePasswordSerializer, ResetPasswordSerializer, LineSpacingSerializer)
+                               EducationLevelSerializer, TestSerializer, ChangePasswordSerializer, ResetPasswordSerializer,
+                               LineSpacingSerializer, TypeSerializer)
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
@@ -90,186 +91,6 @@ def check_email(request):
     except CustomUser.DoesNotExist:
         return Response({'exists': False}, status=status.HTTP_200_OK)
     
-import requests
-from rest_framework.response import Response
-from rest_framework.decorators import api_view
-
-LINKEDIN_CLIENT_ID = '77iq9h80yfvu56'
-LINKEDIN_CLIENT_SECRET = 'HNsKAZxGlcR7YoW0'
-REDIRECT_URI = 'http://localhost:5173/auth/linkedin/callback'
-LINKEDIN_TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken'
-LINKEDIN_USER_INFO_URL = 'https://api.linkedin.com/v2/me'
-
-LINKEDIN_EMAIL_URL = 'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))'
-
-def fetch_linkedin_email(access_token):
-    headers = {'Authorization': f'Bearer {access_token}'}
-    email_response = requests.get(LINKEDIN_EMAIL_URL, headers=headers)
-    email_data = email_response.json()
-    # Ensure email exists and handle potential missing email
-    if email_response.status_code == 200 and 'elements' in email_data:
-        email = email_data['elements'][0]['handle~']['emailAddress']
-        return email
-    return None  # Handle if email is not found
-
-
-@api_view(["POST"])
-def linkedin_callback(request):
-    code = request.data.get('code')
-
-    # Exchange the authorization code for an access token
-    token_response = requests.post(LINKEDIN_TOKEN_URL, data={
-        'grant_type': 'authorization_code',
-        'code': code,
-        'redirect_uri': REDIRECT_URI,
-        'client_id': LINKEDIN_CLIENT_ID,
-        'client_secret': LINKEDIN_CLIENT_SECRET,
-    })
-
-    token_data = token_response.json()
-    access_token = token_data.get('access_token')
-
-    if not access_token:
-        return Response({"error": "LinkedIn token exchange failed"}, status=400)
-
-    # Fetch user profile info
-    headers = {'Authorization': f'Bearer {access_token}'}
-    user_info_response = requests.get(LINKEDIN_USER_INFO_URL, headers=headers)
-    user_info = user_info_response.json()
-
-    first_name = user_info.get('localizedFirstName')
-    last_name = user_info.get('localizedLastName')
-    # Use LinkedIn's Email API to get the user's email (email might not be in the basic profile)
-    email = user_info.get('emailAddress') 
-
-    # Create the user in your database (similar to your Google OAuth logic)
-    user_data = {
-        'first_name': first_name,
-        'last_name': last_name,
-        'work_email': email,
-        'username': f'{first_name.lower()}.{last_name.lower()}',
-        'provider': 'linkedin',  # Mark as LinkedIn signup
-        'provider_state': True,
-    }
-
-    # Check if the role is client or freelancer and use the appropriate serializer
-    role = request.data.get('role')
-    if role == 'client':
-        serializer = ClientSerializer(data=user_data)
-    elif role == 'freelancer':
-        serializer = FreelancerSerializer(data=user_data)
-    else:
-        return Response({'error': 'Invalid role provided.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    if serializer.is_valid():
-        user = serializer.save()
-        user.provider = 'linkedin'
-        user.provider_state = True
-        user.email_verified = True
-
-        # Generate JWT tokens
-        refresh = RefreshToken.for_user(user)
-        token = {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        }
-
-        return Response({
-            'message': 'LinkedIn signup successful',
-            'token': token,
-        }, status=status.HTTP_201_CREATED)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-LINKEDIN_EMAIL_URL = 'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))'
-
-def fetch_linkedin_email(access_token):
-    headers = {'Authorization': f'Bearer {access_token}'}
-    email_response = requests.get(LINKEDIN_EMAIL_URL, headers=headers)
-    email_data = email_response.json()
-    # Ensure email exists and handle potential missing email
-    if email_response.status_code == 200 and 'elements' in email_data:
-        email = email_data['elements'][0]['handle~']['emailAddress']
-        return email
-    return None  # Handle if email is not found
-
-@api_view(["POST"])
-def linkedin_callback(request):
-    code = request.data.get('code')
-
-    # Exchange the authorization code for an access token
-    token_response = requests.post(LINKEDIN_TOKEN_URL, data={
-        'grant_type': 'authorization_code',
-        'code': code,
-        'redirect_uri': REDIRECT_URI,
-        'client_id': LINKEDIN_CLIENT_ID,
-        'client_secret': LINKEDIN_CLIENT_SECRET,
-    })
-
-    if token_response.status_code != 200:
-        return Response({"error": "LinkedIn token exchange failed"}, status=400)
-
-    token_data = token_response.json()
-    access_token = token_data.get('access_token')
-
-    if not access_token:
-        return Response({"error": "LinkedIn token exchange failed"}, status=400)
-
-    # Fetch user profile info
-    headers = {'Authorization': f'Bearer {access_token}'}
-    user_info_response = requests.get(LINKEDIN_USER_INFO_URL, headers=headers)
-    
-    if user_info_response.status_code != 200:
-        return Response({"error": "Failed to fetch LinkedIn user profile"}, status=400)
-
-    user_info = user_info_response.json()
-
-    first_name = user_info.get('localizedFirstName')
-    last_name = user_info.get('localizedLastName')
-
-    # Fetch email separately using the function above
-    email = fetch_linkedin_email(access_token)
-    if not email:
-        return Response({"error": "Unable to retrieve email from LinkedIn"}, status=400)
-
-    # Create the user in your database (similar to your Google OAuth logic)
-    user_data = {
-        'first_name': first_name,
-        'last_name': last_name,
-        'work_email': email,
-        'username': f'{first_name.lower()}.{last_name.lower()}',
-        'provider': 'linkedin',  # Mark as LinkedIn signup
-        'provider_state': True,
-    }
-
-    role = request.data.get('role')
-    if role == 'client':
-        serializer = ClientSerializer(data=user_data)
-    elif role == 'freelancer':
-        serializer = FreelancerSerializer(data=user_data)
-    else:
-        return Response({'error': 'Invalid role provided.'}, status=status.HTTP_400_BAD_REQUEST)
-
-    if serializer.is_valid():
-        user = serializer.save()
-        user.provider = 'linkedin'
-        user.provider_state = True
-        user.email_verified = True
-
-        # Generate JWT tokens
-        refresh = RefreshToken.for_user(user)
-        token = {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        }
-
-        return Response({
-            'message': 'LinkedIn signup successful',
-            'token': token,
-        }, status=status.HTTP_201_CREATED)
-    
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 @api_view(["POST"])
@@ -277,7 +98,8 @@ def linkedin_callback(request):
 @permission_classes([])
 def create_user(request):
     role = request.data.get('role')
-
+    
+    # Check for Google OAuth ID in the request data
     if 'google_id' in request.data:
         google_id_token = request.data.get('google_id')
         decoded_token, error = verify_firebase_token(google_id_token)
@@ -291,31 +113,36 @@ def create_user(request):
         if not email:
             return Response({'error': 'Email not found in Firebase token'}, status=status.HTTP_400_BAD_REQUEST)
 
-        user_data = {
-            'first_name': request.data.get('first_name'),
-            'last_name': request.data.get('last_name'),
-            'work_email': email,
-            'username': request.data.get('username'),
-            'password': make_password('defaultpassword123!'),  # Default password for OAuth sign-ups
-            'profile_image': request.data.get('profile_image'),
-            'country': request.data.get('country'),
-        }
+        # Set up serializer with data for Google OAuth signup
+        user_data = request.data.copy()
+        user_data['work_email'] = email
+        user_data['password'] = make_password('defaultpassword123!')  # Set a default password for OAuth signups
 
+        # Choose serializer based on role
         if role == 'client':
-            serializer = ClientSerializer(data=user_data)
+            serializer = ClientSerializer(data=user_data, context={'request': request})  # Add request context here
         elif role == 'freelancer':
-            serializer = FreelancerSerializer(data=user_data)
+            # Check if type (writer or technical) is specified
+            freelancer_type = user_data.get('type')
+            if freelancer_type not in ['writer', 'technical']:
+                return Response({'error': 'Freelancer type must be either writer or technical.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Set is_writer or is_technical based on type input
+            user_data['is_writer'] = freelancer_type == 'writer'
+            user_data['is_technical'] = freelancer_type == 'technical'
+            serializer = FreelancerSerializer(data=user_data, context={'request': request})  # Add request context here
         else:
             return Response({'error': 'Invalid role provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validate and save the user
         if serializer.is_valid():
             user = serializer.save()
             user.provider = 'google'
             user.provider_uid = google_uid
             user.provider_state = True
-            user.email_verified = True  # Mark email as verified
-            user.user_status = True  # Common field for both users
-            
+            user.email_verified = True
+            user.user_status = True
+
             # Set role-specific status
             if role == 'client':
                 user.client_status = True
@@ -325,6 +152,7 @@ def create_user(request):
 
             user.save()
 
+            # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
             token = {
                 'refresh': str(refresh),
@@ -341,29 +169,39 @@ def create_user(request):
     else:
         # Regular signup process
         if role == 'client':
-            serializer = ClientSerializer(data=request.data)
+            serializer = ClientSerializer(data=request.data, context={'request': request})  # Add request context here
         elif role == 'freelancer':
-            serializer = FreelancerSerializer(data=request.data)
+            freelancer_type = request.data.get('type')
+            if freelancer_type not in ['writer', 'technical']:
+                return Response({'error': 'Freelancer type must be either writer or technical.'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # Set is_writer or is_technical based on type input
+            request.data['is_writer'] = freelancer_type == 'writer'
+            request.data['is_technical'] = freelancer_type == 'technical'
+            serializer = FreelancerSerializer(data=request.data, context={'request': request})  # Add request context here
         else:
             return Response({'error': 'Invalid role provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Validate and save the user
         if serializer.is_valid():
             user = serializer.save()
             user.set_password(request.data.get('password'))  # Hash the password
-            user.user_status = True  # Common field for both users
-            
+            user.user_status = True
+
             # Set role-specific status
             if role == 'client':
                 user.client_status = True
-                user.verified = True  # Set verified to True for clients
+                user.verified = True
             elif role == 'freelancer':
                 user.freelancer_status = True
 
-            user.otp_code = generate_otp()  # Generate OTP for regular sign-up
+            user.otp_code = generate_otp()  # Generate OTP
             user.save()
 
-            send_otp_email(email=user.work_email, otp=user.otp_code)  # Send OTP email
+            # Send OTP email for verification
+            send_otp_email(email=user.work_email, otp=user.otp_code)
 
+            # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
             token = {
                 'refresh': str(refresh),
@@ -719,6 +557,14 @@ def user(request):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+def type(request):
+    user = Freelancer.objects.get(id=request.user.id)
+    serializer = TypeSerializer(user)
+    return Response(serializer.data) 
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def user_info(request):
     user = CustomUser.objects.get(id=request.user.id)
     serializer =UserInfoSerializer(user)
@@ -748,3 +594,185 @@ def logout_view(request):
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+import requests
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
+
+LINKEDIN_CLIENT_ID = '77iq9h80yfvu56'
+LINKEDIN_CLIENT_SECRET = 'HNsKAZxGlcR7YoW0'
+REDIRECT_URI = 'http://localhost:5173/auth/linkedin/callback'
+LINKEDIN_TOKEN_URL = 'https://www.linkedin.com/oauth/v2/accessToken'
+LINKEDIN_USER_INFO_URL = 'https://api.linkedin.com/v2/me'
+
+LINKEDIN_EMAIL_URL = 'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))'
+
+def fetch_linkedin_email(access_token):
+    headers = {'Authorization': f'Bearer {access_token}'}
+    email_response = requests.get(LINKEDIN_EMAIL_URL, headers=headers)
+    email_data = email_response.json()
+    # Ensure email exists and handle potential missing email
+    if email_response.status_code == 200 and 'elements' in email_data:
+        email = email_data['elements'][0]['handle~']['emailAddress']
+        return email
+    return None  # Handle if email is not found
+
+
+@api_view(["POST"])
+def linkedin_callback(request):
+    code = request.data.get('code')
+
+    # Exchange the authorization code for an access token
+    token_response = requests.post(LINKEDIN_TOKEN_URL, data={
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': REDIRECT_URI,
+        'client_id': LINKEDIN_CLIENT_ID,
+        'client_secret': LINKEDIN_CLIENT_SECRET,
+    })
+
+    token_data = token_response.json()
+    access_token = token_data.get('access_token')
+
+    if not access_token:
+        return Response({"error": "LinkedIn token exchange failed"}, status=400)
+
+    # Fetch user profile info
+    headers = {'Authorization': f'Bearer {access_token}'}
+    user_info_response = requests.get(LINKEDIN_USER_INFO_URL, headers=headers)
+    user_info = user_info_response.json()
+
+    first_name = user_info.get('localizedFirstName')
+    last_name = user_info.get('localizedLastName')
+    # Use LinkedIn's Email API to get the user's email (email might not be in the basic profile)
+    email = user_info.get('emailAddress') 
+
+    # Create the user in your database (similar to your Google OAuth logic)
+    user_data = {
+        'first_name': first_name,
+        'last_name': last_name,
+        'work_email': email,
+        'username': f'{first_name.lower()}.{last_name.lower()}',
+        'provider': 'linkedin',  # Mark as LinkedIn signup
+        'provider_state': True,
+    }
+
+    # Check if the role is client or freelancer and use the appropriate serializer
+    role = request.data.get('role')
+    if role == 'client':
+        serializer = ClientSerializer(data=user_data)
+    elif role == 'freelancer':
+        serializer = FreelancerSerializer(data=user_data)
+    else:
+        return Response({'error': 'Invalid role provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if serializer.is_valid():
+        user = serializer.save()
+        user.provider = 'linkedin'
+        user.provider_state = True
+        user.email_verified = True
+
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        token = {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
+
+        return Response({
+            'message': 'LinkedIn signup successful',
+            'token': token,
+        }, status=status.HTTP_201_CREATED)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+LINKEDIN_EMAIL_URL = 'https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))'
+
+def fetch_linkedin_email(access_token):
+    headers = {'Authorization': f'Bearer {access_token}'}
+    email_response = requests.get(LINKEDIN_EMAIL_URL, headers=headers)
+    email_data = email_response.json()
+    # Ensure email exists and handle potential missing email
+    if email_response.status_code == 200 and 'elements' in email_data:
+        email = email_data['elements'][0]['handle~']['emailAddress']
+        return email
+    return None  # Handle if email is not found
+
+@api_view(["POST"])
+def linkedin_callback(request):
+    code = request.data.get('code')
+
+    # Exchange the authorization code for an access token
+    token_response = requests.post(LINKEDIN_TOKEN_URL, data={
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': REDIRECT_URI,
+        'client_id': LINKEDIN_CLIENT_ID,
+        'client_secret': LINKEDIN_CLIENT_SECRET,
+    })
+
+    if token_response.status_code != 200:
+        return Response({"error": "LinkedIn token exchange failed"}, status=400)
+
+    token_data = token_response.json()
+    access_token = token_data.get('access_token')
+
+    if not access_token:
+        return Response({"error": "LinkedIn token exchange failed"}, status=400)
+
+    # Fetch user profile info
+    headers = {'Authorization': f'Bearer {access_token}'}
+    user_info_response = requests.get(LINKEDIN_USER_INFO_URL, headers=headers)
+    
+    if user_info_response.status_code != 200:
+        return Response({"error": "Failed to fetch LinkedIn user profile"}, status=400)
+
+    user_info = user_info_response.json()
+
+    first_name = user_info.get('localizedFirstName')
+    last_name = user_info.get('localizedLastName')
+
+    # Fetch email separately using the function above
+    email = fetch_linkedin_email(access_token)
+    if not email:
+        return Response({"error": "Unable to retrieve email from LinkedIn"}, status=400)
+
+    # Create the user in your database (similar to your Google OAuth logic)
+    user_data = {
+        'first_name': first_name,
+        'last_name': last_name,
+        'work_email': email,
+        'username': f'{first_name.lower()}.{last_name.lower()}',
+        'provider': 'linkedin',  # Mark as LinkedIn signup
+        'provider_state': True,
+    }
+
+    role = request.data.get('role')
+    if role == 'client':
+        serializer = ClientSerializer(data=user_data)
+    elif role == 'freelancer':
+        serializer = FreelancerSerializer(data=user_data)
+    else:
+        return Response({'error': 'Invalid role provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    if serializer.is_valid():
+        user = serializer.save()
+        user.provider = 'linkedin'
+        user.provider_state = True
+        user.email_verified = True
+
+        # Generate JWT tokens
+        refresh = RefreshToken.for_user(user)
+        token = {
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }
+
+        return Response({
+            'message': 'LinkedIn signup successful',
+            'token': token,
+        }, status=status.HTTP_201_CREATED)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

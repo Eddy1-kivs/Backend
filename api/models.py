@@ -140,12 +140,15 @@ class CustomUser(AbstractUser):
 
 
 class Freelancer(CustomUser):
-    expertise = models.ManyToManyField(Expertise)
-    skills = models.ManyToManyField(Skill)
-    subject = models.ManyToManyField(Subject)
-    assignment_type = models.ManyToManyField(AssignmentType)
-    service_type = models.ManyToManyField(ServiceType)
-    language = models.ManyToManyField(Language)
+    is_writer = models.BooleanField(default=False)
+    is_technical = models.BooleanField(default=False)
+    
+    expertise = models.ManyToManyField(Expertise, blank=True)
+    skills = models.ManyToManyField(Skill, blank=True)
+    subject = models.ManyToManyField(Subject, blank=True)
+    assignment_type = models.ManyToManyField(AssignmentType, blank=True)
+    service_type = models.ManyToManyField(ServiceType, blank=True)
+    language = models.ManyToManyField(Language, blank=True)
     # verified = models.BooleanField(default=False, verbose_name=_("Credentials Verified"))
     about = models.TextField(null=True, blank=True)
     bio = models.TextField(null=True, blank=True)
