@@ -2,6 +2,22 @@ from rest_framework import serializers
 from api.models import Messaging, UploadFile, CustomUser
 from django.utils import timezone
 
+from rest_framework import serializers
+from api.models import ChatRoom, RoomMessage
+
+class ChatRoomSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatRoom
+        fields = ['id', 'name', 'description', 'created_at']
+
+class RoomMessageSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    
+    class Meta:
+        model = RoomMessage
+        fields = ['id', 'sender', 'sender_username', 'message', 'files', 'timestamp']
+
+
 
 class UploadFileSerializer(serializers.ModelSerializer):
     class Meta:

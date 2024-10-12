@@ -79,6 +79,7 @@ class Expertise(models.Model):
 
 class CustomUser(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    fcm_token = models.CharField(max_length=255, blank=True, null=True)
     provider_state = models.BooleanField(default=False)
     provider = models.CharField(max_length=50, default="local")  # Store provider name (google, facebook, etc.)
     provider_uid = models.CharField(max_length=255, null=True, blank=True)
@@ -342,6 +343,8 @@ class Job(models.Model):
     printable_sources = models.BooleanField(default=False)
     detailed_outline = models.BooleanField(default=False)
     paid = models.BooleanField(default=False) 
+    is_writing = models.BooleanField(default=False)
+    is_technical = models.BooleanField(default=False)
     
     def time_posted(self):
         now = timezone.now()
@@ -506,6 +509,30 @@ class RevisionReason(models.Model):
 
     def __str__(self):
         return f"Revision Reason for {self.job.title}"
+    
+class ChatRoom(models.Model):
+    name = models.CharField(max_length=255)  # Name of the chatroom
+    description = models.TextField(blank=True, null=True)  # Optional description of the room
+    members = models.ManyToManyField(CustomUser, related_name='chatrooms')  # Members who are part of the room
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+class RoomMessage(models.Model):
+    room = models.ForeignKey(ChatRoom, on_delete=models.CASCADE, related_name='messages')  # The room this message belongs to
+    sender = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True)  # Sender of the message
+    message = models.CharField(max_length=1000)  # Message text
+    is_read = models.BooleanField(default=False)
+    files = models.ManyToManyField(UploadFile, related_name='room_message_files', blank=True)  # Optional file attachments
+    timestamp = models.DateTimeField(auto_now_add=True)  # When the message was sent
+
+    class Meta:
+        ordering = ['timestamp']
+        verbose_name_plural = "RoomMessages"
+
+    def __str__(self):
+        return f"Room: {self.room.name}, Sender: {self.sender.username}, Message: {self.message[:20]}"
     
 class Messaging(models.Model): 
     user = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name="user")

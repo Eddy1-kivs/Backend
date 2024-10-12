@@ -122,6 +122,7 @@ class UserStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = [
+            'id',
             'is_active', 
             'is_online', 
             'is_staff', 

@@ -301,7 +301,7 @@ def verify_card_payment_and_post_job(request):
     try:
         # Directly post the job using the provided data
         serializer = JobPostSerializer(data=request.data, context={'request': request})
-        if serializer.is_valid():
+        if serializer.is_valid(): 
             job = serializer.save(client=request.user.client)
             job.paid = True  # Mark the job as paid
             job.save()

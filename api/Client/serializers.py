@@ -117,6 +117,99 @@ class UploadFileSerializer(serializers.ModelSerializer):
         model = UploadFile
         fields = ['id', 'file', 'uploaded_at']
 
+# class JobPostSerializer(serializers.ModelSerializer):
+#     files = UploadFileSerializer(many=True, read_only=True)
+#     skills = serializers.PrimaryKeyRelatedField(queryset=Skill.objects.all(), many=True)
+#     expertise = serializers.PrimaryKeyRelatedField(queryset=Expertise.objects.all(), many=True)
+#     languages = serializers.PrimaryKeyRelatedField(queryset=Language.objects.all(), many=True)
+#     service_type = serializers.PrimaryKeyRelatedField(queryset=ServiceType.objects.all(), many=True)
+#     subjects = serializers.PrimaryKeyRelatedField(queryset=Subject.objects.all(), many=True)
+#     assignment_types = serializers.PrimaryKeyRelatedField(queryset=AssignmentType.objects.all(), many=True)
+#     style = serializers.PrimaryKeyRelatedField(queryset=Style.objects.all(), many=True)
+#     levels = serializers.PrimaryKeyRelatedField(queryset=Level.objects.all(), many=True)
+#     education_levels = serializers.PrimaryKeyRelatedField(queryset=EducationlLevel.objects.all(), many=True)
+#     line_spacing = serializers.PrimaryKeyRelatedField(queryset=LineSpacing.objects.all(), many=True)
+
+#     # New field for job type
+#     job_type = serializers.ChoiceField(choices=['writing', 'technical'], required=True)
+
+#     class Meta:
+#         model = Job
+#         fields = [
+#             'id', 'title', 'description', 'files', 'due_date', 'num_pages', 'words', 'project_cost',
+#             'expertise', 'skills', 'created_at', 'service', 'languages', 'service_type', 'subjects',
+#             'assignment_types', 'style', 'levels', 'education_levels', 'line_spacing', 'page_abstract',
+#             'printable_sources', 'detailed_outline', 'job_type'  # Include job_type in fields
+#         ]
+#         extra_kwargs = {
+#             'line_spacing': {'error_messages': {'required': 'Spacing is required'}},
+#             'title': {'error_messages': {'required': 'Title is required.'}},
+#             'description': {'error_messages': {'required': 'Description is required.'}},
+#             'num_pages': {'error_messages': {'invalid': 'Invalid number of pages.'}},
+#             'project_cost': {'error_messages': {'required': 'Project cost is required.'}},
+#             'expertise': {'error_messages': {'empty': 'At least one expertise is required.'}},
+#             'skills': {'error_messages': {'empty': 'At least one skill is required.'}},
+#             'languages': {'error_messages': {'invalid': 'Invalid language.'}},
+#             'service_type': {'error_messages': {'invalid': 'Invalid service type.'}},
+#             'subjects': {'error_messages': {'invalid': 'Invalid subject.'}},
+#             'assignment_types': {'error_messages': {'invalid': 'Invalid assignment type.'}},
+#             'style': {'error_messages': {'invalid': 'Invalid style.'}},
+#             'levels': {'error_messages': {'empty': 'A profession level is required.'}},
+#             'education_levels': {'error_messages': {'empty': 'An education level is required.'}},
+#         }
+
+#     def create(self, validated_data):
+#         job_type = validated_data.pop('job_type')  # Get the job type
+#         # rest of the data
+#         files_data = self.context['request'].FILES
+#         expertise_data = validated_data.pop('expertise', [])
+#         skills_data = validated_data.pop('skills', [])
+#         languages_data = validated_data.pop('languages', [])
+#         service_type_data = validated_data.pop('service_type', [])
+#         subjects_data = validated_data.pop('subjects', [])
+#         style_data = validated_data.pop('style', [])
+#         line_spacing_data = validated_data.pop('line_spacing', [])
+#         assignment_types_data = validated_data.pop('assignment_types', [])
+#         levels = validated_data.pop('levels', [])
+#         education_levels = validated_data.pop('education_levels', [])
+
+#         # Convert HTML description to plain text
+#         html_description = validated_data.get('description', '')
+#         plain_text_description = html2text.html2text(html_description)
+#         validated_data['description'] = plain_text_description
+
+#         # Create job object with base validated data
+#         job = Job.objects.create(**validated_data)
+
+#         # Set the job type
+#         if job_type == 'writing':
+#             job.is_writing = True
+#         elif job_type == 'technical':
+#             job.is_technical = True
+
+#         job.save()
+
+#         # Continue with setting up relationships
+#         for file_data in files_data.getlist('files'):
+#             upload_file = UploadFile.objects.create(file=file_data)
+#             job.files.add(upload_file)
+
+#         job.languages.set(languages_data)
+#         job.line_spacing.set(line_spacing_data)
+#         job.service_type.set(service_type_data)
+#         job.subjects.set(subjects_data)
+#         job.style.set(style_data)
+#         job.assignment_types.set(assignment_types_data)
+#         job.levels.set(levels)
+#         job.education_levels.set(education_levels)
+
+#         if expertise_data:
+#             job.expertise.set(expertise_data)
+#         if skills_data:
+#             job.skills.set(skills_data)
+
+#         return job
+
 
 class JobPostSerializer(serializers.ModelSerializer):
     files = UploadFileSerializer(many=True, read_only=True)
@@ -130,6 +223,8 @@ class JobPostSerializer(serializers.ModelSerializer):
     levels = serializers.PrimaryKeyRelatedField(queryset=Level.objects.all(), many=True)
     education_levels = serializers.PrimaryKeyRelatedField(queryset=EducationlLevel.objects.all(), many=True)
     line_spacing = serializers.PrimaryKeyRelatedField(queryset=LineSpacing.objects.all(), many=True)
+    
+    
 
     class Meta:
         model = Job
@@ -208,7 +303,7 @@ class ProposalSerializer(serializers.ModelSerializer):
     submitted_at = serializers.SerializerMethodField()
     attachment = serializers.FileField(source='attachment.url', read_only=True)
     viewed = serializers.BooleanField(default=False)
-    viewed_at = serializers.SerializerMethodField()
+    viewed_at = serializers.SerializerMethodField() 
     skills = serializers.StringRelatedField(source='freelancer.skills', many=True)
     expertise = serializers.StringRelatedField(source='freelancer.expertise', many=True)
     

@@ -12,6 +12,40 @@ from django.db.models import Subquery, OuterRef
 from django.db.models import Case, Count, When, F
 from django.contrib.auth import get_user_model
 
+import json
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from api.models import Messaging, CustomUser, UploadFile
+
+async def redis_listener():
+    pubsub = redis_client.pubsub()
+    await pubsub.subscribe(REDIS_CHANNEL)
+    print(f"Subscribed to Redis channel: {REDIS_CHANNEL}")
+
+    async for message in pubsub.listen():
+        if message["type"] == "message":
+            message_data = json.loads(message["data"].decode("utf-8"))
+            sender_id = message_data["sender"]
+            receiver_id = message_data["receiver"]
+            text_message = message_data["message"]
+            file_data = message_data.get("file", None)
+
+            message_instance = Messaging.objects.create(
+                sender_id=sender_id,
+                receiver_id=receiver_id,
+                message=text_message
+            )
+
+            if file_data:
+                file_bytes = base64.b64decode(file_data)
+                file_name = f"{sender_id}_to_{receiver_id}_file"
+                path = default_storage.save(f"uploads/{file_name}", ContentFile(file_bytes))
+                upload_file = UploadFile.objects.create(file=path)
+                message_instance.files.add(upload_file)
+            
+            message_instance.save()
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
@@ -41,6 +75,7 @@ def send_message(request):
     
     # Return errors if the serializer is invalid
     return Response(serializer.errors, status=400)
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_user_status(request, user_id):
@@ -117,6 +152,8 @@ def get_messages_with_user(request, user_id):
     serializer = MessageSerializer(queryset, many=True, context={'request': request})
     return Response(serializer.data)
 
+
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_unread_messages_count(request):
@@ -177,3 +214,4 @@ def search_messages_or_users(request):
         'messages': message_serializer.data,
         'users': user_serializer.data
     }, status=200)
+
