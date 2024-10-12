@@ -29,6 +29,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # For local development
     "https://www.avantiwriters.com",
     "https://avantiwriters.com",
+    "wss://mysocket.pro"
 ]
 
 CORS_ALLOW_METHODS = ['DELETE', 'GET', 'OPTIONS', 'PATCH', 'POST', 'PUT']
