@@ -605,17 +605,20 @@ def revision_reason(request, job_id):
         return Response(serializer.data)
     except RevisionReason.DoesNotExist:
         return Response({'message': 'Reason not found'}, status=404)
-
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_job_submission(request, job_id):
     try:
-        job_submission = JobSubmission.objects.get(job_id=job_id, freelancer=request.user.freelancer)
-        serializer = JobSubmissionSerializer(job_submission)
+        # Use .filter() to retrieve multiple submissions by the freelancer for the given job
+        job_submissions = JobSubmission.objects.filter(job_id=job_id, freelancer=request.user.freelancer)
+        if not job_submissions.exists():
+            return Response({'message': 'Job submission not found'}, status=404)
+        
+        serializer = JobSubmissionSerializer(job_submissions, many=True)
         return Response(serializer.data)
-    except JobSubmission.DoesNotExist:
-        return Response({'message': 'Job submission not found'}, status=404)
-     
+    except Exception as e:
+        return Response({'message': str(e)}, status=500)
+
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

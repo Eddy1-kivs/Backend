@@ -611,21 +611,27 @@ def decline_proposal(request, proposal_id):
 @permission_classes([IsAuthenticated])
 def job_submissions(request, job_id):
     try:
-        job_submission = JobSubmission.objects.get(job_id=job_id)
-        serializer = JobSubmissionSerializer(job_submission)
+        # Use .filter() to retrieve multiple objects and serialize them as a list
+        job_submissions = JobSubmission.objects.filter(job_id=job_id)
+        serializer = JobSubmissionSerializer(job_submissions, many=True)
         return Response(serializer.data)
     except JobSubmission.DoesNotExist:
         return Response({'message': 'Job submission not found'}, status=404)
-    
+
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def get_revision_submission(request, job_id):
     try:
-        revision_submission = Revision.objects.get(job_id=job_id)
-        serializer = RevisionSerializer(revision_submission)
-        return Response(serializer.data)
+        # Use filter to retrieve multiple revisions
+        revision_submissions = Revision.objects.filter(job_id=job_id)
+        
+        # Serialize the queryset, many=True is used for multiple objects
+        serializer = RevisionSerializer(revision_submissions, many=True)
+        
+        return Response(serializer.data, status=200)
+    
     except Revision.DoesNotExist:
-        return Response({'message': 'revision not found'}, status=404)
+        return Response({'message': 'Revisions not found'}, status=404)
 
 
 @api_view(['GET'])
@@ -642,21 +648,19 @@ def job_status(request, job_id):
 @permission_classes([IsAuthenticated])
 def mark_submission_satisfied(request, job_id):
     try:
-        # Retrieve the job submission associated with the provided job_id
-        job_submission = JobSubmission.objects.get(job_id=job_id)
+        # Retrieve all job submissions associated with the provided job_id
+        job_submissions = JobSubmission.objects.filter(job_id=job_id)
         
-        # Update the job submission's satisfied field to True
-        job_submission.satisfied = True
-        job_submission.save()
-        
+        # Mark all associated job submissions as satisfied
+        job_submissions.update(satisfied=True)
+
         # Update the associated hired freelancer's completed field to True
         hired_freelancer = HiredFreelancer.objects.get(job_id=job_id)
         hired_freelancer.completed = True
+        hired_freelancer.pending = False
         hired_freelancer.save()
 
-        return Response({'message': 'Job submission marked as satisfied successfully'}, status=status.HTTP_200_OK)
-    except JobSubmission.DoesNotExist:
-        return Response({'error': 'Job submission not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'message': 'All job submissions marked as satisfied successfully'}, status=status.HTTP_200_OK)
     except HiredFreelancer.DoesNotExist:
         return Response({'error': 'Hired freelancer not found'}, status=status.HTTP_404_NOT_FOUND)
 
