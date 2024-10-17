@@ -27,6 +27,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.hashers import make_password
 from firebase_admin import auth as firebase_auth, exceptions as firebase_exceptions
+from django.db import transaction
 
 User = get_user_model()
 
@@ -96,6 +97,7 @@ def check_email(request):
 @api_view(["POST"])
 @authentication_classes([])
 @permission_classes([])
+@transaction.atomic
 def create_user(request):
     role = request.data.get('role')
     
@@ -149,6 +151,7 @@ def create_user(request):
                 user.verified = True
             elif role == 'freelancer':
                 user.freelancer_status = True
+                Wallet.objects.create(user=user)
 
             user.save()
 
@@ -162,6 +165,10 @@ def create_user(request):
             return Response({
                 'message': f'{role.capitalize()} signup successful.',
                 'token': token,
+                'freelancer_status': user.freelancer_status,
+                'client_status': user.client_status,
+                'email_verified': user.email_verified,
+                'verified': user.verified,
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -194,6 +201,7 @@ def create_user(request):
                 user.verified = True
             elif role == 'freelancer':
                 user.freelancer_status = True
+                Wallet.objects.create(user=user)
 
             user.otp_code = generate_otp()  # Generate OTP
             user.save()
@@ -211,6 +219,10 @@ def create_user(request):
             return Response({
                 'message': f'Registration successful. Check your email for OTP.',
                 'token': token,
+                'freelancer_status': user.freelancer_status,
+                'client_status': user.client_status,
+                'email_verified': user.email_verified,
+                'verified': user.verified,
             }, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -263,6 +275,8 @@ def login(request):
             'freelancer_status': freelancer_status,
             'client_status': client_status,
             'is_staff': user.is_staff,
+            'email_verified': user.email_verified,
+            'verified': user.verified,
         }, status=status.HTTP_200_OK)
 
     else:
@@ -304,14 +318,14 @@ def login(request):
                 'freelancer_status': freelancer_status,
                 'client_status': client_status,
                 'is_staff': user.is_staff,
+                'email_verified': user.email_verified,
+                'verified': user.verified,
             }
             return Response(response_data, status=status.HTTP_200_OK)
 
         return Response({'error': 'Invalid credentials.'}, status=status.HTTP_401_UNAUTHORIZED)
 
     return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-
 
 
 @api_view(["OPTIONS", "POST"])
@@ -363,7 +377,7 @@ def verify_otp(request):
         user_instance.email_verified = True
         user_instance.save()
 
-        Wallet.objects.create(user=request.user, balance=0)
+        # Wallet.objects.create(user=request.user, balance=0)
 
         # Check if the user is a freelancer
         freelancer_status = hasattr(user_instance, 'freelancer')
@@ -374,6 +388,8 @@ def verify_otp(request):
             'freelancer_status': freelancer_status,
             'client_status': client_status,
             'is_staff': user_instance.is_staff,
+            'email_verified': user_instance.email_verified,
+            'verified': user_instance.verified,
             'stuff_application': user_instance.stuff_application,
         }
         return Response(response_data, status=status.HTTP_200_OK)

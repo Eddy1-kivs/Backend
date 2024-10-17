@@ -296,7 +296,7 @@ class JobPostSerializer(serializers.ModelSerializer):
 
 class ProposalSerializer(serializers.ModelSerializer):
     freelancer_username = serializers.CharField(source='freelancer.username', read_only=True)
-    freelancer_profile_image = serializers.ImageField(source='freelancer.profile_image', read_only=True)
+    freelancer_profile_image = serializers.URLField(source='freelancer.profile_image', read_only=True)
     job_title = serializers.CharField(source='job.title', read_only=True)
     cover_letter = serializers.CharField()
     bid_amount = serializers.DecimalField(max_digits=10, decimal_places=2, default='1')
@@ -347,9 +347,10 @@ class ProposalSerializer(serializers.ModelSerializer):
 
 class JobSerializer(serializers.ModelSerializer):
     created_at = serializers.SerializerMethodField()
+    remaining_time = serializers.SerializerMethodField()
+    order_id = serializers.SerializerMethodField()  # Add SerializerMethodField for order_id
     client = serializers.StringRelatedField(source='client.work_email', read_only=True)
     skills = serializers.StringRelatedField(many=True)
-
     style = serializers.StringRelatedField(many=True)
     subjects = serializers.StringRelatedField(many=True)
     assignment_types = serializers.StringRelatedField(many=True)
@@ -357,15 +358,13 @@ class JobSerializer(serializers.ModelSerializer):
     languages = serializers.StringRelatedField(many=True)
     levels = serializers.StringRelatedField(many=True)
     education_levels = serializers.StringRelatedField(many=True)
-
     expertise = serializers.StringRelatedField(many=True)
-    remaining_time = serializers.SerializerMethodField() 
     files = UploadFileSerializer(many=True, read_only=True)
 
     class Meta:
         model = Job
         fields = '__all__'
-    
+
     def get_created_at(self, obj):
         now = timezone.now()
         delta = now - obj.created_at
@@ -379,31 +378,30 @@ class JobSerializer(serializers.ModelSerializer):
             return "Just now"
     
     def get_remaining_time(self, obj):
-        # Get the current time as timezone-aware datetime
         now = timezone.now()
-        
-        # Convert the due_date (date object) to a datetime at the end of the day (23:59:59)
         due_date_end = datetime.combine(obj.due_date, time.max)
         due_date_end = timezone.make_aware(due_date_end, timezone.get_default_timezone())
-        
-        # Calculate the difference
         delta = due_date_end - now
- 
-        if delta.days == 0:  # Less than 24 hours remaining
+
+        if delta.days == 0:
             hours = delta.seconds // 3600
             minutes = (delta.seconds % 3600) // 60
-            
             if hours > 0:
                 return f"{hours} {'hour' if hours == 1 else 'hours'}, {minutes} {'minute' if minutes == 1 else 'minutes'}"
             else:
                 return f"{minutes} {'minute' if minutes == 1 else 'minutes'}"
-        elif delta.days < 0:  # Due date has passed
+        elif delta.days < 0:
             return "Date Passed"
         else:
-            # If more than one day is remaining
             return f"{delta.days + 1} {'day' if delta.days + 1 == 1 else 'days'}"
 
-
+    def get_order_id(self, obj):
+        # Check if there is a HiredFreelancer associated with this job that has started
+        try:
+            hired_freelancer = HiredFreelancer.objects.get(job=obj, started=True)
+            return hired_freelancer.order_id
+        except HiredFreelancer.DoesNotExist:
+            return None
 class SkillSerializer(serializers.ModelSerializer):
     class Meta:
         model = Skill

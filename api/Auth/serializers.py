@@ -122,7 +122,8 @@ class UserStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = [
-            'id',
+            'id', 
+            'profile_image',
             'is_active', 
             'is_online', 
             'is_staff', 
@@ -184,7 +185,7 @@ class ClientSerializer(UserSerializer):
 class FreelancerSerializer(UserSerializer):
     class Meta:
         model = Freelancer
-        fields = ['id', 'first_name', 'last_name', 'country',
+        fields = ['id', 'first_name', 'last_name', 'country','profile_image',
                   'work_email', 'receive_news_option','freelancer_status', 'username', 'password', 'otp']
 
     def create(self, validated_data):
