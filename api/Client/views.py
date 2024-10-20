@@ -556,14 +556,16 @@ def job_detail(request, job_id):
     return Response(serialized_data)
 
 
+# In your backend
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def proposal_detail(request, proposal_id):
     proposal = get_object_or_404(Proposal, id=proposal_id)
 
-    # Update the viewed status to True
-    proposal.viewed = True
-    proposal.save()
+    # Update the viewed status to True if it's not already True
+    if not proposal.viewed:
+        proposal.viewed = True
+        proposal.save()
 
     proposal_serializer = ProposalSerializer(proposal)
     return Response(proposal_serializer.data, status=status.HTTP_200_OK)
@@ -675,19 +677,24 @@ def request_revision(request, job_id):
         return Response({'error': 'Revision reason is required'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        # Retrieve the job submission associated with the provided job_id
-        job_submission = JobSubmission.objects.get(job_id=job_id)
-        
-        # Update the job submission's need_revision field to True
-        job_submission.need_revision = True
-        job_submission.save()
+        # Retrieve all job submissions associated with the provided job_id
+        job_submissions = JobSubmission.objects.filter(job_id=job_id)
 
-        # Create a RevisionReason instance
-        RevisionReason.objects.create(job=job_submission.job, reason=revision_reason)
+        if not job_submissions.exists():
+            return Response({'error': 'Job submission not found'}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response({'message': 'Revision requested successfully'}, status=status.HTTP_200_OK)
-    except JobSubmission.DoesNotExist:
-        return Response({'error': 'Job submission not found'}, status=status.HTTP_404_NOT_FOUND)
+        # Iterate through each JobSubmission and mark need_revision as True
+        for job_submission in job_submissions:
+            job_submission.need_revision = True
+            job_submission.save()
+
+            # Create a RevisionReason instance for each submission
+            RevisionReason.objects.create(job=job_submission.job, reason=revision_reason)
+
+        return Response({'message': 'Revisions requested for all submissions successfully'}, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 @permission_classes([])

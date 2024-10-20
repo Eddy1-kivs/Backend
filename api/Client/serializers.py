@@ -350,6 +350,7 @@ class JobSerializer(serializers.ModelSerializer):
     remaining_time = serializers.SerializerMethodField()
     order_id = serializers.SerializerMethodField()  # Add SerializerMethodField for order_id
     client = serializers.StringRelatedField(source='client.work_email', read_only=True)
+    client_id = serializers.StringRelatedField(source='client.id', read_only=True)
     skills = serializers.StringRelatedField(many=True)
     style = serializers.StringRelatedField(many=True)
     subjects = serializers.StringRelatedField(many=True)

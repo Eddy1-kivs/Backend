@@ -338,6 +338,7 @@ class ProposalSerializer(serializers.ModelSerializer):
     submitted_at = serializers.SerializerMethodField()
     viewed_at = serializers.SerializerMethodField()
     files = UploadFileSerializer(many=True, read_only=True)
+    client = serializers.StringRelatedField(source='job.client.id', read_only=True)
     job_title = serializers.CharField(source='job.title', read_only=True)
     job_description = serializers.CharField(source='job.description', read_only=True)
     job_skills = serializers.StringRelatedField(source='job.skills', many=True, read_only=True)
@@ -354,7 +355,7 @@ class ProposalSerializer(serializers.ModelSerializer):
             'id', 'job', 'job_title', 'job_description', 'job_skills', 'job_expertise', 
             'job_amount_posted', 'client_name', 'client_country', 'job_time_posted', 
             'job_paid', 'submitted_at', 'cover_letter', 'bid_amount', 'files', 
-            'viewed', 'viewed_at', 'accepted', 'declined'
+            'viewed', 'viewed_at', 'accepted', 'declined', 'client'
         ]
         read_only_fields = ['job']
 

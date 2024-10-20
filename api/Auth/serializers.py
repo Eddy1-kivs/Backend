@@ -139,7 +139,9 @@ class TypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Freelancer
         fields = [
+            'id',
             'is_writer',
+            'username',
             'is_technical'
         ]
         

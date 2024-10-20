@@ -76,7 +76,6 @@ class Expertise(models.Model):
     def __str__(self):
         return self.expertise
 
-
 class CustomUser(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     fcm_token = models.CharField(max_length=255, blank=True, null=True)
@@ -137,8 +136,6 @@ class CustomUser(AbstractUser):
     
     def generate_unique_username(self):
         return get_random_string(length=32)
-
-
 
 class Freelancer(CustomUser):
     is_writer = models.BooleanField(default=False)
@@ -257,7 +254,6 @@ class Client(CustomUser):
         verbose_name = 'Client'
         verbose_name_plural = 'Clients'
  
-
 class Test(models.Model):
     freelancer = models.ForeignKey(Freelancer, on_delete=models.CASCADE)
     topic = models.TextField(null=True, blank=True)
@@ -268,7 +264,6 @@ class Test(models.Model):
     def __str__(self):
         return f"Test for {self.freelancer.work_email} on {self.topic}"
 
-
 class Suspension(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='suspension')
@@ -278,7 +273,6 @@ class Suspension(models.Model):
 
     def __str__(self):
         return f"Suspension for {self.suspension_days} days for user {self.user.username}"
-
 
 class User(AbstractUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -311,7 +305,6 @@ class AmountPerPage(models.Model):
 
     def __str__(self):
         return f"Amount Per Page: {self.amount}"
-
 
 class Job(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
@@ -453,7 +446,6 @@ class DeclinedJob(models.Model):
     def __str__(self):
         return f"{self.freelancer} declined job for {self.proposal.job.title}"
 
-
 class HiredFreelancer(models.Model):
     freelancer = models.ForeignKey(Freelancer, on_delete=models.CASCADE)
     job = models.ForeignKey(Job, on_delete=models.CASCADE)
@@ -500,7 +492,6 @@ class Revision(models.Model):
 
     def __str__(self):
         return f"Revision for {self.job.title} by {self.freelancer.work_email}" 
-
 
 class RevisionReason(models.Model):
     job = models.ForeignKey(Job, related_name='revision_reasons', on_delete=models.CASCADE)
@@ -550,7 +541,6 @@ class Messaging(models.Model):
     def __str__(self):
         return f"{self.sender} - {self.receiver}"
 
-
 class Review(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     reviewer = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, related_name="reviewer")
@@ -563,7 +553,6 @@ class Review(models.Model):
     def __str__(self):
         return f"Review for {self.job.title} by {self.reviewer.work_email}"
 
-
 class Card(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='master_cards')
     cardholder_name = models.CharField(max_length=255)
@@ -574,16 +563,12 @@ class Card(models.Model):
 
     def __str__(self):
         return f"{self.cardholder_name}'s card ending in {self.card_number[-4:]}"
-
-
-
 class PayPal(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='paypal_accounts')
     email = models.EmailField()
 
     def __str__(self):
         return self.email
-
 
 class Mpesa(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='mpesa_accounts')
@@ -625,12 +610,13 @@ class Transaction(models.Model):
         return f"{self.transaction_type} of {self.amount} on {self.timestamp}"
     
 class Notification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='notifications')
     message = models.TextField()
+    icon = models.CharField(null=True, blank=True, max_length=200)
     is_read = models.BooleanField(default=False)
     timestamp = models.DateTimeField(default=timezone.now)
     url = models.URLField(null=True, blank=True)
 
     def __str__(self):
         return f"Notification for {self.user.username}: {self.message[:20]}..."
-

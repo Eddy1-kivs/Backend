@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path, include # type: ignore
 from .Auth.views import (
     client_info,
     freelancer_info,
@@ -105,10 +105,19 @@ from .Reviews.views import (post_review, user_reviews, other_user_reviews)
 
 from .Support.views import (clients, freelancers, suspended_users, verify_credentials, suspend_user, decline_credentials, hired_freelancers, freelancers_search, clients_search, hired_freelancers_search)
 
-from .Notifications.views import (NotificationViewSet, MarkNotificationAsRead, MarkAllNotificationsAsRead)
 from .Payment.views import (create_card, create_paypal, create_mpesa, get_cards, get_paypals, get_mpesas, delete_card, delete_paypal, delete_mpesa, get_wallet_balance)
-
+from .Notification.views import (create_notification_client_signle,  mark_notification_as_read, mark_all_notifications_as_read, delete_notification, delete_all_notifications, create_notification_client, create_notification, get_user_notifications, create_proposal_viewed_notification)
 urlpatterns = [  
+    path('notifications/create/', create_notification, name='create-notification'),
+    path('notifications/create/single/', create_notification_client_signle, name='create-notification'),
+
+    path('notifications/create-client/', create_notification_client, name='create_notification_client'),
+    path('notifications/creates/', create_proposal_viewed_notification, name='create-notification'),
+    path('user/notifications/', get_user_notifications, name='get_user_notifications'),
+    path('notifications/read/<int:notification_id>/', mark_notification_as_read, name='mark_notification_as_read'),
+    path('notifications/read-all/', mark_all_notifications_as_read, name='mark_all_notifications_as_read'),
+    path('notifications/delete/<uuid:notification_id>/', delete_notification, name='delete_notification'),
+    path('notifications/delete-all/', delete_all_notifications, name='delete_all_notifications'),
     path('check-email/', check_email, name='check_email'),
     path('type/', type, name='type'),
     path('upload-profile-image/', upload_profile_image, name='upload_profile_image'),
@@ -144,9 +153,6 @@ urlpatterns = [
     path('freelancer-invited-jobs/', list_invited_jobs, name='list-invited-jobs'),
     path('freelancers/worked-with-client/', freelancers_worked_with_client, name='freelancers-worked-with-client'),
 
-    path('notifications/', NotificationViewSet.as_view({'get': 'list', 'post': 'create'}), name='notifications'),
-    path('notifications/<int:pk>/mark-as-read/', MarkNotificationAsRead.as_view(), name='mark-notification-as-read'),
-    path('notifications/mark-all-as-read/', MarkAllNotificationsAsRead.as_view(), name='mark-all-notifications-as-read'),
     path('change-user-password/', change_password_view, name='change_user_password'),
     path('api/request-password-reset/', request_password_reset, name='request_password_reset'),
     path('api/reset-password/<uidb64>/<token>/', reset_password, name='reset_password'),
